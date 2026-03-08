@@ -278,7 +278,7 @@ class SOPHandler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     os.chdir(Path(__file__).parent)
 
-    port = 8080
-    server = HTTPServer(("", port), SOPHandler)
+    port = int(os.environ.get("PORT", 5000))
+    server = HTTPServer(("0.0.0.0", port), SOPHandler)
     print(f"SOP Portal server running on http://localhost:{port}")
     server.serve_forever()
