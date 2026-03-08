@@ -390,8 +390,22 @@
     }
 
     @media (max-width: 600px) {
-      .container { padding: 32px 16px 60px; }
-      h1 { font-size: 30px; }
+      .container { padding: 24px 16px 60px; }
+      h1 { font-size: 24px; }
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .controls-right {
+        grid-column: 1 / -1;
+        margin-left: 0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .ctrl-btn { padding: 10px 14px; font-size: 13px; text-align: center; }
+      #sopSectionSelect { grid-column: 1 / -1; width: 100%; }
       .phase-card { margin-left: 0; padding: 20px 18px; }
       .phase-header { gap: 12px; }
       .phase-icon { width: 44px; height: 44px; font-size: 20px; border-radius: 12px; }
