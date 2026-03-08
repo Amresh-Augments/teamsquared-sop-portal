@@ -962,19 +962,12 @@
   <div class="modal-overlay" id="createSopModal">
     <div class="modal-card">
       <h3>Create New SOP</h3>
-      <p>Enter a title, choose an icon, and select a section.</p>
+      <p>Enter a title and select a section.</p>
       <div class="login-input-wrap">
         <input type="text" id="createSopTitle" class="login-input" placeholder="SOP Title" autocomplete="off">
       </div>
       <div class="login-input-wrap">
         <select id="createSopSection" class="login-input" style="appearance: auto;"></select>
-      </div>
-      <div class="login-input-wrap" style="display: flex; align-items: center; gap: 12px; justify-content: center;">
-        <button class="emoji-preview-btn" id="createSopIconBtn" type="button" onclick="showCreateSopEmojiPicker(this)">📋</button>
-        <span style="color: #aaa; font-size: .85rem;">Click to pick icon</span>
-      </div>
-      <div class="emoji-picker-modal" id="createSopEmojiPicker">
-        <div class="emoji-grid" id="createSopEmojiGrid"></div>
       </div>
       <p class="login-error" id="createSopError"></p>
       <button class="login-btn" onclick="submitCreateSop()">Create</button>
@@ -1467,10 +1460,8 @@
       if (!isAdmin()) return;
 
       document.getElementById('createSopTitle').value = '';
-      document.getElementById('createSopIconBtn').textContent = '\u{1F4CB}';
       document.getElementById('createSopError').textContent = '';
       document.getElementById('createSopError').classList.remove('visible');
-      document.getElementById('createSopEmojiPicker').classList.remove('visible');
 
       // Populate section dropdown
       const select = document.getElementById('createSopSection');
@@ -1491,7 +1482,7 @@
       const error = document.getElementById('createSopError');
 
       const title = titleInput.value.trim();
-      const icon = document.getElementById('createSopIconBtn').textContent.trim() || '\u{1F4CB}';
+      const icon = '\u{1F4CB}';
       const sectionId = document.getElementById('createSopSection').value;
 
       if (!title) {
@@ -1546,28 +1537,10 @@
     const CREATE_SOP_EMOJIS = ['\u{1F680}','\u{1F4CB}','\u{1F4CC}','\u{1F4BC}','\u{1F3AF}','\u26A1','\u{1F527}','\u{1F4CA}','\u{1F4C8}','\u{1F4A1}','\u{1F3C6}','\u2705','\u{1F4DD}','\u{1F50D}','\u{1F4AC}','\u{1F4F1}','\u{1F5A5}\uFE0F','\u{1F512}','\u{1F465}','\u{1F3A8}','\u{1F4E6}','\u{1F6E0}\uFE0F','\u{1F31F}','\u{1F4C5}','\u{1F4B0}','\u{1F3D7}\uFE0F','\u{1F4E3}','\u{1F9E9}','\u{1F511}','\u2764\uFE0F','\u{1F91D}','\u{1F4DA}','\u{1F393}','\u23F0','\u{1F30D}','\u{1F504}','\u{1F4EE}','\u{1F6E1}\uFE0F','\u{1F389}','\u2728'];
 
     function initEmojiGrids() {
-      const grid = document.getElementById('createSopEmojiGrid');
-      grid.innerHTML = CREATE_SOP_EMOJIS.map(e =>
-        '<button class="emoji-opt" type="button" onclick="pickCreateSopEmoji(\'' + e + '\')">' + e + '</button>'
-      ).join('');
-
       const sGrid = document.getElementById('sectionEmojiGrid');
       sGrid.innerHTML = CREATE_SOP_EMOJIS.map(e =>
         '<button class="emoji-opt" type="button" onclick="pickSectionEmoji(\'' + e + '\')">' + e + '</button>'
       ).join('');
-    }
-
-    function showCreateSopEmojiPicker(btn) {
-      const picker = document.getElementById('createSopEmojiPicker');
-      const rect = btn.getBoundingClientRect();
-      picker.style.top = (rect.bottom + 6) + 'px';
-      picker.style.left = Math.max(8, rect.left) + 'px';
-      picker.classList.add('visible');
-    }
-
-    function pickCreateSopEmoji(emoji) {
-      document.getElementById('createSopIconBtn').textContent = emoji;
-      document.getElementById('createSopEmojiPicker').classList.remove('visible');
     }
 
     function showSectionEmojiPicker(btn) {
@@ -1584,12 +1557,10 @@
     }
 
     document.addEventListener('click', function(e) {
-      ['createSopEmojiPicker', 'sectionEmojiPicker'].forEach(id => {
-        const picker = document.getElementById(id);
-        if (picker.classList.contains('visible') && !picker.contains(e.target) && !e.target.closest('.emoji-preview-btn')) {
-          picker.classList.remove('visible');
-        }
-      });
+      const picker = document.getElementById('sectionEmojiPicker');
+      if (picker.classList.contains('visible') && !picker.contains(e.target) && !e.target.closest('.emoji-preview-btn')) {
+        picker.classList.remove('visible');
+      }
     });
 
     // =============================================
