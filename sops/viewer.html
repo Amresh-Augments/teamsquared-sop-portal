@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOP Viewer — Teams Squared</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(165deg, #1A0640 0%, #0F0525 40%, #130830 100%);
+      color: #FFFFFF;
+      overflow-x: hidden;
+    }
+    .orb-1 {
+      position: fixed; top: -200px; left: -200px; width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .orb-2 {
+      position: fixed; bottom: -300px; right: -200px; width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(192, 132, 252, 0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .container { max-width: 740px; margin: 0 auto; padding: 56px 28px 80px; position: relative; z-index: 1; }
+
+    h1 { font-size: 40px; font-weight: 800; color: #FFFFFF; margin-bottom: 10px; line-height: 1.15; letter-spacing: -0.025em; }
+    .subtitle { font-size: 17px; color: #B8A8D8; font-weight: 500; line-height: 1.5; margin-bottom: 0; }
+
+    h1[contenteditable="true"], .subtitle[contenteditable="true"] {
+      outline: none;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 10px;
+      padding: 8px 14px;
+      background: rgba(139, 92, 246, 0.06);
+      transition: border-color 0.2s ease;
+    }
+    h1[contenteditable="true"]:focus, .subtitle[contenteditable="true"]:focus {
+      border-color: rgba(139, 92, 246, 0.45);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    /* Controls */
+    .controls { display: flex; gap: 8px; margin: 36px 0; flex-wrap: wrap; }
+    .ctrl-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+      padding: 8px 18px; border-radius: 9px; border: 1px solid rgba(139, 92, 246, 0.22);
+      background: rgba(139, 92, 246, 0.08); cursor: pointer; color: #B8A8D8; transition: all 0.15s ease;
+    }
+    .ctrl-btn:hover { border-color: rgba(139, 92, 246, 0.4); color: #D8CCEE; background: rgba(139, 92, 246, 0.14); }
+    .edit-toggle.active {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.45);
+      color: #D8CCEE;
+      box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+    }
+    .controls-right { margin-left: auto; display: flex; gap: 8px; }
+
+    /* Section dropdown (edit mode only, admin only) */
+    #sopSectionSelect {
+      display: none;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+      padding: 8px 14px; border-radius: 9px;
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      background: rgba(139, 92, 246, 0.08); color: #B8A8D8;
+      cursor: pointer; outline: none;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23A78BFA' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      padding-right: 32px;
+    }
+    #sopSectionSelect:hover { border-color: rgba(139, 92, 246, 0.4); color: #D8CCEE; }
+    #sopSectionSelect option { background: #1E0A4A; color: #FFFFFF; }
+    body.edit-mode.is-admin #sopSectionSelect { display: inline-block; }
+    .divider { height: 1px; background: linear-gradient(90deg, rgba(139, 92, 246, 0.25), rgba(139, 92, 246, 0.03)); margin-bottom: 32px; }
+
+    /* Delete SOP button (visible in edit mode only) */
+    .delete-sop-btn {
+      display: none;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      color: #EF4444 !important;
+      background: rgba(239, 68, 68, 0.08) !important;
+    }
+    .delete-sop-btn:hover {
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      background: rgba(239, 68, 68, 0.15) !important;
+      color: #F87171 !important;
+    }
+    body.edit-mode .delete-sop-btn { display: inline-block; }
+
+    /* Admin-only elements hidden for non-admins, shown when body has is-admin */
+    body:not(.is-admin) .admin-only { display: none; }
+
+    /* Phase */
+    .phase { position: relative; }
+    .phase-line {
+      position: absolute; left: 27px; top: 56px; bottom: -32px; width: 2px; z-index: 0;
+    }
+    .phase-inner { position: relative; z-index: 1; }
+
+    /* Phase header */
+    .phase-header { display: flex; align-items: center; gap: 18px; cursor: pointer; padding: 14px 0; user-select: none; }
+    .phase-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: rgba(139, 92, 246, 0.12); border: 1.5px solid rgba(139, 92, 246, 0.25);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 26px;
+      transition: all 0.2s ease;
+    }
+    .phase.open .phase-icon { box-shadow: 0 0 28px rgba(139, 92, 246, 0.1); }
+    .phase-title { font-weight: 700; font-size: 20px; color: #FFFFFF; letter-spacing: -0.01em; }
+    .phase-subtitle {
+      font-size: 12px; font-weight: 700; color: #FFFFFF;
+      background: linear-gradient(135deg, #6D28D9, #9333EA);
+      padding: 3px 12px; border-radius: 20px; display: inline-block; margin-left: 10px;
+    }
+    .phase-days { font-size: 14px; color: #A99BC8; font-weight: 500; margin-top: 2px; display: block; }
+    .phase-toggle {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.18);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+    .phase.open .phase-toggle { transform: rotate(180deg); }
+
+    /* Delete phase button */
+    .delete-phase-btn {
+      display: none;
+      width: 28px; height: 28px; border-radius: 8px;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.08);
+      color: #EF4444; font-size: 16px; cursor: pointer;
+      flex-shrink: 0; align-items: center; justify-content: center;
+      transition: all 0.15s ease;
+      font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1;
+    }
+    .delete-phase-btn:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.45);
+    }
+    body.edit-mode .delete-phase-btn { display: flex; }
+
+    /* Phase body */
+    .phase-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+    .phase.open .phase-body { max-height: 5000px; }
+    .phase-card {
+      margin-left: 74px; margin-bottom: 28px;
+      background: rgba(139, 92, 246, 0.05); border-radius: 18px;
+      border: 1px solid rgba(139, 92, 246, 0.12); padding: 28px 30px;
+    }
+
+    /* Items */
+    .items { display: flex; flex-direction: column; gap: 20px; }
+    .item { display: flex; gap: 14px; align-items: flex-start; }
+    .item-num {
+      width: 30px; height: 30px; border-radius: 9px;
+      background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.25);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
+      font-weight: 700; font-size: 13px;
+    }
+    .item-content { padding-top: 4px; flex: 1; min-width: 0; }
+    .item-text { font-size: 15.5px; color: #EEEBF5; line-height: 1.75; margin: 0; }
+
+    /* Link pills */
+    .link-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+    .link-pill {
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700;
+      color: #FFFFFF; background: linear-gradient(135deg, #6D28D9, #9333EA);
+      padding: 6px 16px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; line-height: 1.4;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+      transition: all 0.2s ease; text-decoration: none; border: none;
+      position: relative;
+    }
+    .link-pill:hover {
+      background: linear-gradient(135deg, #7C3AED, #A855F7);
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+      transform: translateY(-1px);
+    }
+    .link-pill svg { flex-shrink: 0; }
+    .link-pill.has-url {
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25), 0 0 0 1.5px rgba(74, 222, 128, 0.35);
+    }
+    body.edit-mode .link-pill { cursor: pointer; }
+
+    /* Remove link button (on each pill, visible in edit mode) */
+    .remove-link-btn {
+      display: none;
+      margin-left: 4px;
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.7;
+      cursor: pointer;
+    }
+    .remove-link-btn:hover { opacity: 1; }
+    body.edit-mode .remove-link-btn { display: inline; }
+
+    /* Add link button (visible in edit mode) */
+    .add-link-btn {
+      display: none;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1.5px dashed rgba(139, 92, 246, 0.3);
+      background: transparent;
+      color: #A78BFA;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      align-items: center;
+    }
+    .add-link-btn:hover {
+      border-color: rgba(139, 92, 246, 0.5);
+      background: rgba(139, 92, 246, 0.06);
+      color: #C4B5FD;
+    }
+    body.edit-mode .add-link-btn { display: inline-flex; }
+
+    /* Editable phase title/days in edit mode */
+    body.edit-mode .phase-title[contenteditable="true"],
+    body.edit-mode .phase-days[contenteditable="true"] {
+      outline: none;
+      border: 1px dashed rgba(139, 92, 246, 0.4);
+      border-radius: 4px;
+      padding: 2px 6px;
+      min-width: 60px;
+      background: rgba(139, 92, 246, 0.06);
+      cursor: text;
+    }
+    body.edit-mode .phase-title[contenteditable="true"]:focus,
+    body.edit-mode .phase-days[contenteditable="true"]:focus {
+      border-color: rgba(139, 92, 246, 0.6);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    /* Emoji picker */
+    .emoji-picker {
+      display: none; position: absolute; z-index: 2000;
+      background: linear-gradient(165deg, #1E0A4A, #140835);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 12px; padding: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      width: 280px;
+    }
+    .emoji-picker.visible { display: block; }
+    .emoji-picker-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+    .emoji-btn {
+      background: none; border: none; font-size: 1.4rem;
+      cursor: pointer; padding: 6px; border-radius: 8px;
+      transition: background 0.15s;
+    }
+    .emoji-btn:hover { background: rgba(139, 92, 246, 0.2); }
+    body.edit-mode .phase-icon { cursor: pointer; }
+    body.edit-mode .phase-icon:hover { transform: scale(1.15); transition: transform 0.15s; }
+
+    /* Insert stage button (between phases, visible in edit mode) */
+    .insert-phase-btn-wrap {
+      display: none;
+      text-align: center;
+      padding: 8px 0;
+    }
+    body.edit-mode .insert-phase-btn-wrap { display: block; }
+    .insert-phase-btn {
+      padding: 6px 20px;
+      border-radius: 20px;
+      border: 1.5px dashed rgba(139, 92, 246, 0.25);
+      background: transparent;
+      color: #A78BFA;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .insert-phase-btn:hover {
+      border-color: rgba(139, 92, 246, 0.45);
+      background: rgba(139, 92, 246, 0.06);
+      color: #C4B5FD;
+    }
+
+    /* Link URL popover */
+    .link-popover {
+      position: absolute; z-index: 40;
+      background: linear-gradient(165deg, #1E0A4A, #140835);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 12px; padding: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      display: none; width: 320px;
+    }
+    .link-popover.visible { display: flex; gap: 8px; align-items: center; }
+    .link-popover input {
+      flex: 1; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      background: rgba(139, 92, 246, 0.08); color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 500; outline: none;
+    }
+    .link-popover input::placeholder { color: #6B5B8A; }
+    .link-popover input:focus { border-color: rgba(139, 92, 246, 0.5); }
+    .link-popover button {
+      padding: 8px 14px; border-radius: 8px; border: none;
+      background: linear-gradient(135deg, #6D28D9, #9333EA);
+      color: #FFFFFF; font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+    .link-popover button:hover { background: linear-gradient(135deg, #7C3AED, #A855F7); }
+
+    /* Callout */
+    .callout {
+      margin-top: 24px; background: rgba(192, 132, 252, 0.08);
+      border: 1px solid rgba(192, 132, 252, 0.18); border-radius: 14px; padding: 20px 22px;
+    }
+    .callout-title {
+      font-weight: 700; font-size: 13px; color: #D8B4FE;
+      margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .callout-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+    .callout-dot { color: #C084FC; font-size: 8px; line-height: 26px; }
+    .callout-text { font-size: 14.5px; color: #D4C8EC; line-height: 1.7; }
+
+    /* Footer */
+    .footer-note {
+      margin-top: 44px; padding: 18px 22px;
+      background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 14px; display: flex; align-items: center; gap: 12px;
+    }
+    .footer-note span:last-child { font-size: 14px; color: #B8A8D8; line-height: 1.55; }
+
+    /* Edit mode text */
+    .item-text[contenteditable="true"] {
+      outline: none;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: rgba(139, 92, 246, 0.06);
+      transition: border-color 0.2s ease, background 0.2s ease;
+      cursor: text;
+    }
+    .item-text[contenteditable="true"]:focus {
+      border-color: rgba(139, 92, 246, 0.45);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .add-step-btn {
+      display: none; width: 100%; padding: 10px; margin-top: 16px;
+      border-radius: 10px; border: 1.5px dashed rgba(139, 92, 246, 0.25);
+      background: transparent; color: #A78BFA;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .add-step-btn:hover {
+      border-color: rgba(139, 92, 246, 0.45);
+      background: rgba(139, 92, 246, 0.06);
+      color: #C4B5FD;
+    }
+    body.edit-mode .add-step-btn { display: block; }
+
+    .delete-step-btn {
+      display: none; width: 24px; height: 24px; border-radius: 7px;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.08); color: #EF4444;
+      font-size: 14px; cursor: pointer; flex-shrink: 0; margin-top: 5px;
+      align-items: center; justify-content: center;
+      transition: all 0.15s ease;
+      font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1;
+    }
+    .delete-step-btn:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.45);
+    }
+    body.edit-mode .delete-step-btn { display: flex; }
+
+    .save-toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25);
+      color: #4ADE80; padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; z-index: 50;
+      opacity: 0; transform: translateY(8px);
+      transition: all 0.3s ease; pointer-events: none;
+    }
+    .save-toast.visible { opacity: 1; transform: translateY(0); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; color: #A99BC8; padding: 60px 20px;
+      font-size: 15px; font-weight: 500;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 32px 16px 60px; }
+      h1 { font-size: 30px; }
+      .phase-card { margin-left: 0; padding: 20px 18px; }
+      .phase-header { gap: 12px; }
+      .phase-icon { width: 44px; height: 44px; font-size: 20px; border-radius: 12px; }
+      .phase-title { font-size: 17px; }
+      .phase-line { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb-1"></div>
+  <div class="orb-2"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <div style="margin-bottom: 44px;">
+      <h1 id="sopTitle">Loading...</h1>
+      <p class="subtitle" id="sopSubtitle"></p>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="ctrl-btn" onclick="toggleAll(true)">Expand All</button>
+      <button class="ctrl-btn" onclick="toggleAll(false)">Collapse All</button>
+      <select id="sopSectionSelect" onchange="onSectionChange(this.value)"></select>
+      <div class="controls-right">
+        <button class="ctrl-btn delete-sop-btn admin-only" onclick="deleteSOP()">Delete SOP</button>
+        <button class="ctrl-btn edit-toggle admin-only" id="editToggle" onclick="handleEditClick()">&#9998; Edit</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- Phases rendered by JS -->
+    <div id="phases"></div>
+
+    <!-- Footer -->
+    <div class="footer-note">
+      <span style="font-size: 18px;">💡</span>
+      <span>This is a living document — more phases and detail will be added as the process evolves.</span>
+    </div>
+  </div>
+
+  <!-- Save toast -->
+  <div class="save-toast" id="saveToast">Changes saved</div>
+
+  <!-- Link URL popover -->
+  <div class="link-popover" id="linkPopover">
+    <input type="url" placeholder="Paste URL here..." id="linkPopoverInput">
+    <button onclick="saveLinkUrl()">Save</button>
+  </div>
+
+  <!-- Add Link label popover -->
+  <div class="link-popover" id="addLinkPopover" style="flex-direction: column; align-items: stretch;">
+    <label style="font-size: .75rem; color: #ccc; margin-bottom: 4px;">Link label</label>
+    <input type="text" id="addLinkLabelInput" placeholder="e.g. Template Sheet">
+    <div style="display: flex; gap: 6px; margin-top: 6px;">
+      <button onclick="submitAddLink()">Add</button>
+      <button onclick="closeAddLinkPopover()" style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Emoji picker -->
+  <div class="emoji-picker" id="emojiPicker">
+    <div class="emoji-picker-grid"></div>
+  </div>
+
+  <script>
+    // =============================================
+    //  CONFIG
+    // =============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const SOP_ID = urlParams.get('id');
+    const IS_NEW = urlParams.get('new') === 'true';
+
+    // =============================================
+    //  STATE
+    // =============================================
+    let sb = null;
+    let currentProfile = null;
+    let sopData = null;
+    let isEditMode = false;
+    let allSections = [];
+
+    const arrowSvg = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 9L9 3M9 3H4.5M9 3V7.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const chevronSvg = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    // =============================================
+    //  SUPABASE INIT
+    // =============================================
+    async function initSupabase() {
+      const resp = await fetch('/api/config');
+      const cfg = await resp.json();
+      sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        await loadProfile();
+      }
+    }
+
+    async function loadProfile() {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return;
+
+      const { data } = await sb.from('profiles').select('id, email, display_name, is_admin').eq('id', user.id).single();
+      currentProfile = data;
+      updateViewerUIForRole();
+    }
+
+    function isAdmin() {
+      return currentProfile && currentProfile.is_admin === true;
+    }
+
+    function updateViewerUIForRole() {
+      if (isAdmin()) document.body.classList.add('is-admin');
+      else document.body.classList.remove('is-admin');
+    }
+
+    async function loadSections() {
+      const { data } = await sb.from('sections')
+        .select('id, name, icon, display_order')
+        .order('display_order');
+      allSections = data || [];
+      populateSectionDropdown();
+    }
+
+    function populateSectionDropdown() {
+      const select = document.getElementById('sopSectionSelect');
+      select.innerHTML = '<option value="">— No Section —</option>';
+      allSections.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.icon + ' ' + s.name;
+        select.appendChild(opt);
+      });
+      if (sopData && sopData.section_id) {
+        select.value = sopData.section_id;
+      }
+    }
+
+    function onSectionChange(sectionId) {
+      if (!sopData) return;
+      sopData.section_id = sectionId || null;
+    }
+
+    // =============================================
+    //  HELPERS
+    // =============================================
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showSaveToast() {
+      const toast = document.getElementById('saveToast');
+      toast.classList.add('visible');
+      setTimeout(() => toast.classList.remove('visible'), 2000);
+    }
+
+    // =============================================
+    //  EDIT MODE
+    // =============================================
+    function handleEditClick() {
+      if (isEditMode) {
+        toggleEditMode();
+        return;
+      }
+      if (!isAdmin()) return;
+      toggleEditMode();
+    }
+
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const btn = document.getElementById('editToggle');
+
+      if (isEditMode) {
+        document.body.classList.add('edit-mode');
+        btn.classList.add('active');
+        btn.innerHTML = '&#10003; Done';
+        renderPhases();
+      } else {
+        document.body.classList.remove('edit-mode');
+        btn.classList.remove('active');
+        btn.innerHTML = '&#9998; Edit';
+
+        document.querySelectorAll('.item-text').forEach(el => el.removeAttribute('contenteditable'));
+        document.querySelectorAll('.phase-title').forEach(el => el.removeAttribute('contenteditable'));
+        document.querySelectorAll('.phase-days').forEach(el => el.removeAttribute('contenteditable'));
+        const titleEl = document.getElementById('sopTitle');
+        const subtitleEl = document.getElementById('sopSubtitle');
+        if (titleEl) titleEl.removeAttribute('contenteditable');
+        if (subtitleEl) subtitleEl.removeAttribute('contenteditable');
+
+        document.querySelectorAll('.link-pill').forEach(pill => {
+          pill.removeEventListener('click', linkPillEditHandler);
+        });
+
+        closeLinkPopover();
+        saveToServer();
+
+        if (IS_NEW) {
+          window.parent.postMessage({type: 'sop-created'}, '*');
+        }
+
+        renderPhases();
+      }
+    }
+
+    // =============================================
+    //  RENDERING
+    // =============================================
+    function insertStageBtnHtml(insertIdx) {
+      return '<div class="insert-phase-btn-wrap"><button class="insert-phase-btn" onclick="insertStage(' + insertIdx + ')">+ Add Stage</button></div>';
+    }
+
+    function renderPhases() {
+      const container = document.getElementById('phases');
+
+      if (!sopData || sopData.phases.length === 0) {
+        container.innerHTML = '<div class="empty-state">No stages yet. Click Edit to add stages.</div>' + insertStageBtnHtml(0);
+        if (isEditMode) applyEditModeToDOM();
+        return;
+      }
+
+      let html = insertStageBtnHtml(0);
+
+      sopData.phases.forEach((phase, phaseIdx) => {
+        const isLast = phaseIdx === sopData.phases.length - 1;
+        const accent = phase.accent || '#A78BFA';
+        const lineGrad = 'linear-gradient(180deg, ' + accent + '50, ' + accent + '08)';
+
+        const itemsHtml = (phase.items || []).map((item, itemIdx) => {
+          const links = item.links || [];
+          const pillsHtml = links.map((link, linkIdx) => {
+            const href = link.url || '#';
+            const target = link.url ? ' target="_blank" rel="noopener"' : '';
+            const hasUrlClass = link.url ? ' has-url' : '';
+            return '<a class="link-pill' + hasUrlClass + '" href="' + escapeHtml(href) + '"' + target + ' data-phase-idx="' + phaseIdx + '" data-item-idx="' + itemIdx + '" data-link-idx="' + linkIdx + '">' + arrowSvg + ' ' + escapeHtml(link.label) + '<span class="remove-link-btn" onclick="removeLink(event, ' + phaseIdx + ', ' + itemIdx + ', ' + linkIdx + ')">&times;</span></a>';
+          }).join('');
+
+          const linksHtml = '<div class="link-row">' + pillsHtml + '<button class="add-link-btn" onclick="addLink(' + phaseIdx + ', ' + itemIdx + ')">+ Link</button></div>';
+
+          return '<div class="item" data-phase-idx="' + phaseIdx + '" data-item-idx="' + itemIdx + '">' +
+            '<div class="item-num" style="color: ' + accent + '">' + (itemIdx + 1) + '</div>' +
+            '<div class="item-content">' +
+            '<p class="item-text">' + escapeHtml(item.text) + '</p>' +
+            linksHtml +
+            '</div>' +
+            '<button class="delete-step-btn" onclick="deleteStep(' + phaseIdx + ', ' + itemIdx + ')" title="Remove step">&times;</button>' +
+            '</div>';
+        }).join('');
+
+        let calloutHtml = '';
+        if (phase.callout) {
+          calloutHtml = '<div class="callout"><div class="callout-title">\u26A1 ' + escapeHtml(phase.callout.title) + '</div>' +
+            phase.callout.items.map(note =>
+              '<div class="callout-item"><span class="callout-dot">\u25CF</span><span class="callout-text">' + escapeHtml(note) + '</span></div>'
+            ).join('') + '</div>';
+        }
+
+        const subtitleHtml = phase.subtitle ? '<span class="phase-subtitle">' + escapeHtml(phase.subtitle) + '</span>' : '';
+
+        html += '<div class="phase open" data-phase-idx="' + phaseIdx + '">' +
+          (!isLast ? '<div class="phase-line" style="background: ' + lineGrad + '"></div>' : '') +
+          '<div class="phase-inner">' +
+          '<div class="phase-header" onclick="togglePhase(' + phaseIdx + ')">' +
+          '<div class="phase-icon" onclick="if(isEditMode){event.stopPropagation(); changePhaseIcon(this, ' + phaseIdx + ')}">' + phase.icon + '</div>' +
+          '<div style="flex: 1; min-width: 0;">' +
+          '<div style="display: flex; align-items: center; flex-wrap: wrap;">' +
+          '<span class="phase-title">' + escapeHtml(phase.title) + '</span>' +
+          subtitleHtml +
+          '</div>' +
+          '<span class="phase-days">' + escapeHtml(phase.days || '') + '</span>' +
+          '</div>' +
+          '<button class="delete-phase-btn" onclick="event.stopPropagation(); deleteStage(' + phaseIdx + ')" title="Delete stage">&times;</button>' +
+          '<div class="phase-toggle">' + chevronSvg + '</div>' +
+          '</div>' +
+          '<div class="phase-body"><div class="phase-card">' +
+          '<div class="items">' + itemsHtml + '</div>' +
+          calloutHtml +
+          '<button class="add-step-btn" onclick="addStep(' + phaseIdx + ')">+ Add Step</button>' +
+          '</div></div>' +
+          '</div></div>';
+
+        html += insertStageBtnHtml(phaseIdx + 1);
+      });
+
+      container.innerHTML = html;
+
+      if (isEditMode) applyEditModeToDOM();
+    }
+
+    function applyEditModeToDOM() {
+      document.querySelectorAll('.item-text').forEach(el => {
+        el.setAttribute('contenteditable', 'true');
+      });
+      document.querySelectorAll('.phase-title').forEach(el => {
+        el.setAttribute('contenteditable', 'true');
+      });
+      document.querySelectorAll('.phase-days').forEach(el => {
+        el.setAttribute('contenteditable', 'true');
+      });
+      document.querySelectorAll('.link-pill').forEach(pill => {
+        pill.addEventListener('click', linkPillEditHandler);
+      });
+      const titleEl = document.getElementById('sopTitle');
+      const subtitleEl = document.getElementById('sopSubtitle');
+      if (titleEl) titleEl.setAttribute('contenteditable', 'true');
+      if (subtitleEl) subtitleEl.setAttribute('contenteditable', 'true');
+    }
+
+    // =============================================
+    //  DATA SYNC & SAVE
+    // =============================================
+    function syncDomToData() {
+      if (!sopData) return;
+
+      const titleEl = document.getElementById('sopTitle');
+      const subtitleEl = document.getElementById('sopSubtitle');
+      if (titleEl) sopData.title = titleEl.textContent.trim();
+      if (subtitleEl) sopData.subtitle = subtitleEl.textContent.trim();
+
+      document.querySelectorAll('.phase').forEach(phaseEl => {
+        const phaseIdx = parseInt(phaseEl.dataset.phaseIdx);
+        if (isNaN(phaseIdx) || phaseIdx >= sopData.phases.length) return;
+        const phase = sopData.phases[phaseIdx];
+
+        const titleEl = phaseEl.querySelector('.phase-title');
+        if (titleEl) phase.title = titleEl.textContent.trim();
+        const daysEl = phaseEl.querySelector('.phase-days');
+        if (daysEl) phase.days = daysEl.textContent.trim();
+
+        phaseEl.querySelectorAll('.item .item-text').forEach((textEl, itemIdx) => {
+          if (itemIdx < phase.items.length) {
+            phase.items[itemIdx].text = textEl.textContent.trim();
+          }
+        });
+      });
+    }
+
+    async function saveToServer() {
+      syncDomToData();
+      if (!sopData || !SOP_ID || !sb) return;
+
+      document.title = sopData.title + ' \u2014 Teams Squared';
+
+      try {
+        await sb.from('sops').update({
+          title: sopData.title,
+          subtitle: sopData.subtitle,
+          section_id: sopData.section_id,
+          data: { phases: sopData.phases },
+        }).eq('id', SOP_ID);
+      } catch (err) {
+        console.error('Failed to save:', err);
+      }
+
+      showSaveToast();
+      window.parent.postMessage({type: 'sop-section-changed'}, '*');
+    }
+
+    // =============================================
+    //  STRUCTURAL EDITS
+    // =============================================
+    let addLinkPhaseIdx = -1;
+    let addLinkItemIdx = -1;
+
+    function addLink(phaseIdx, itemIdx) {
+      syncDomToData();
+      addLinkPhaseIdx = phaseIdx;
+      addLinkItemIdx = itemIdx;
+
+      const btn = document.querySelector('.phase[data-phase-idx="' + phaseIdx + '"] .item[data-item-idx="' + itemIdx + '"] .add-link-btn');
+      const popover = document.getElementById('addLinkPopover');
+      const input = document.getElementById('addLinkLabelInput');
+      input.value = '';
+
+      const rect = btn.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      popover.style.top = (rect.bottom + scrollTop + 6) + 'px';
+      popover.style.left = Math.max(8, rect.left) + 'px';
+      popover.classList.add('visible');
+      input.focus();
+    }
+
+    function submitAddLink() {
+      const input = document.getElementById('addLinkLabelInput');
+      const label = input.value.trim();
+      if (!label) return;
+      if (!sopData.phases[addLinkPhaseIdx].items[addLinkItemIdx].links) {
+        sopData.phases[addLinkPhaseIdx].items[addLinkItemIdx].links = [];
+      }
+      sopData.phases[addLinkPhaseIdx].items[addLinkItemIdx].links.push({label: label, url: ''});
+      closeAddLinkPopover();
+      renderPhases();
+      saveToServer();
+    }
+
+    function closeAddLinkPopover() {
+      document.getElementById('addLinkPopover').classList.remove('visible');
+    }
+
+    function removeLink(e, phaseIdx, itemIdx, linkIdx) {
+      e.preventDefault();
+      e.stopPropagation();
+      syncDomToData();
+      sopData.phases[phaseIdx].items[itemIdx].links.splice(linkIdx, 1);
+      renderPhases();
+      saveToServer();
+    }
+
+    function insertStage(insertIdx) {
+      syncDomToData();
+      const newPhase = {
+        id: Date.now(),
+        icon: '\u{1F4CC}',
+        title: 'New Stage',
+        days: '',
+        accent: '#A78BFA',
+        items: [{text: 'New step \u2014 click to edit', links: []}],
+      };
+      sopData.phases.splice(insertIdx, 0, newPhase);
+      renderPhases();
+      saveToServer();
+    }
+
+    function deleteStage(phaseIdx) {
+      if (!isAdmin()) return;
+      syncDomToData();
+      sopData.phases.splice(phaseIdx, 1);
+      renderPhases();
+      saveToServer();
+    }
+
+    function addStep(phaseIdx) {
+      syncDomToData();
+      sopData.phases[phaseIdx].items.push({text: 'New step \u2014 click to edit', links: []});
+      renderPhases();
+      saveToServer();
+    }
+
+    function deleteStep(phaseIdx, itemIdx) {
+      if (sopData.phases[phaseIdx].items.length <= 1) return;
+      syncDomToData();
+      sopData.phases[phaseIdx].items.splice(itemIdx, 1);
+      renderPhases();
+      saveToServer();
+    }
+
+    async function deleteSOP() {
+      if (!isAdmin()) return;
+      if (!confirm('Are you sure you want to delete this SOP? This cannot be undone.')) return;
+      try {
+        await sb.from('sops').delete().eq('id', SOP_ID);
+      } catch (err) {
+        console.error('Failed to delete SOP:', err);
+      }
+      window.parent.postMessage({type: 'sop-deleted'}, '*');
+    }
+
+    // =============================================
+    //  LINK POPOVER
+    // =============================================
+    let activeLinkPill = null;
+
+    function linkPillEditHandler(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      showLinkPopover(e.currentTarget);
+    }
+
+    function showLinkPopover(pillEl) {
+      const popover = document.getElementById('linkPopover');
+      const input = document.getElementById('linkPopoverInput');
+      activeLinkPill = pillEl;
+
+      const currentHref = pillEl.getAttribute('href');
+      input.value = (currentHref && currentHref !== '#') ? currentHref : '';
+
+      const rect = pillEl.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+
+      popover.style.top = (rect.bottom + scrollTop + 6) + 'px';
+      popover.style.left = Math.max(8, rect.left + scrollLeft - 40) + 'px';
+
+      popover.classList.add('visible');
+      input.focus();
+      input.select();
+    }
+
+    function saveLinkUrl() {
+      if (!activeLinkPill) return;
+
+      const input = document.getElementById('linkPopoverInput');
+      const url = input.value.trim();
+      const phaseIdx = parseInt(activeLinkPill.dataset.phaseIdx);
+      const itemIdx = parseInt(activeLinkPill.dataset.itemIdx);
+      const linkIdx = parseInt(activeLinkPill.dataset.linkIdx);
+
+      sopData.phases[phaseIdx].items[itemIdx].links[linkIdx].url = url;
+
+      if (url) {
+        activeLinkPill.setAttribute('href', url);
+        activeLinkPill.setAttribute('target', '_blank');
+        activeLinkPill.setAttribute('rel', 'noopener');
+        activeLinkPill.classList.add('has-url');
+      } else {
+        activeLinkPill.setAttribute('href', '#');
+        activeLinkPill.removeAttribute('target');
+        activeLinkPill.removeAttribute('rel');
+        activeLinkPill.classList.remove('has-url');
+      }
+
+      closeLinkPopover();
+      saveToServer();
+    }
+
+    function closeLinkPopover() {
+      document.getElementById('linkPopover').classList.remove('visible');
+      activeLinkPill = null;
+    }
+
+    document.getElementById('linkPopoverInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveLinkUrl(); }
+      if (e.key === 'Escape') { e.preventDefault(); closeLinkPopover(); }
+    });
+
+    document.getElementById('addLinkLabelInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); submitAddLink(); }
+      if (e.key === 'Escape') { e.preventDefault(); closeAddLinkPopover(); }
+    });
+
+    document.addEventListener('click', (e) => {
+      const popover = document.getElementById('linkPopover');
+      if (popover.classList.contains('visible') && !popover.contains(e.target) && !e.target.classList.contains('link-pill')) {
+        closeLinkPopover();
+      }
+      const addLinkPop = document.getElementById('addLinkPopover');
+      if (addLinkPop.classList.contains('visible') && !addLinkPop.contains(e.target) && !e.target.classList.contains('add-link-btn')) {
+        closeAddLinkPopover();
+      }
+      const emojiPicker = document.getElementById('emojiPicker');
+      if (emojiPicker.classList.contains('visible') && !emojiPicker.contains(e.target) && !e.target.closest('.phase-icon')) {
+        closeEmojiPicker();
+      }
+    });
+
+    // =============================================
+    //  EMOJI PICKER
+    // =============================================
+    let emojiCallback = null;
+    const EMOJI_LIST = ['\u{1F680}','\u{1F4CB}','\u{1F4CC}','\u{1F4BC}','\u{1F3AF}','\u26A1','\u{1F527}','\u{1F4CA}','\u{1F4C8}','\u{1F4A1}','\u{1F3C6}','\u2705','\u{1F4DD}','\u{1F50D}','\u{1F4AC}','\u{1F4F1}','\u{1F5A5}\uFE0F','\u{1F512}','\u{1F465}','\u{1F3A8}','\u{1F4E6}','\u{1F6E0}\uFE0F','\u{1F31F}','\u{1F4C5}','\u{1F4B0}','\u{1F3D7}\uFE0F','\u{1F4E3}','\u{1F9E9}','\u{1F511}','\u2764\uFE0F','\u{1F91D}','\u{1F4DA}','\u{1F393}','\u23F0','\u{1F30D}','\u{1F504}','\u{1F4EE}','\u{1F6E1}\uFE0F','\u{1F389}','\u2728'];
+
+    function initEmojiPicker() {
+      const grid = document.querySelector('#emojiPicker .emoji-picker-grid');
+      grid.innerHTML = EMOJI_LIST.map(function(e) {
+        return '<button class="emoji-btn" type="button" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>';
+      }).join('');
+    }
+
+    function showEmojiPicker(anchorEl, callback) {
+      emojiCallback = callback;
+      const picker = document.getElementById('emojiPicker');
+      const rect = anchorEl.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      picker.style.top = (rect.bottom + scrollTop + 6) + 'px';
+      picker.style.left = Math.max(8, rect.left) + 'px';
+      picker.classList.add('visible');
+    }
+
+    function pickEmoji(emoji) {
+      if (emojiCallback) emojiCallback(emoji);
+      closeEmojiPicker();
+    }
+
+    function closeEmojiPicker() {
+      document.getElementById('emojiPicker').classList.remove('visible');
+      emojiCallback = null;
+    }
+
+    function changePhaseIcon(el, phaseIdx) {
+      showEmojiPicker(el, function(emoji) {
+        sopData.phases[phaseIdx].icon = emoji;
+        el.textContent = emoji;
+        saveToServer();
+      });
+    }
+
+    // =============================================
+    //  PHASE TOGGLE
+    // =============================================
+    function togglePhase(phaseIdx) {
+      if (isEditMode) return;
+      const el = document.querySelector('.phase[data-phase-idx="' + phaseIdx + '"]');
+      if (el) el.classList.toggle('open');
+    }
+
+    function toggleAll(open) {
+      document.querySelectorAll('.phase').forEach(el => {
+        if (open) el.classList.add('open');
+        else el.classList.remove('open');
+      });
+    }
+
+    // =============================================
+    //  AUTO-SAVE (debounced)
+    // =============================================
+    let saveTimeout;
+    document.addEventListener('input', (e) => {
+      if ((e.target.classList.contains('item-text') || e.target.classList.contains('phase-title') || e.target.classList.contains('phase-days') || e.target.id === 'sopTitle' || e.target.id === 'sopSubtitle') && isEditMode) {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => saveToServer(), 800);
+      }
+    });
+
+    // =============================================
+    //  INIT
+    // =============================================
+    (async function init() {
+      if (!SOP_ID) {
+        document.getElementById('sopTitle').textContent = 'Error';
+        document.getElementById('sopSubtitle').textContent = 'No SOP ID specified.';
+        return;
+      }
+
+      await initSupabase();
+
+      // Load SOP data from Supabase
+      try {
+        const { data, error } = await sb.from('sops')
+          .select('title, subtitle, data, icon, section_id')
+          .eq('id', SOP_ID)
+          .single();
+
+        if (data) {
+          sopData = {
+            title: data.title,
+            subtitle: data.subtitle || '',
+            phases: (data.data && data.data.phases) ? data.data.phases : [],
+            section_id: data.section_id || null,
+          };
+        }
+      } catch (err) {
+        console.error('Failed to load SOP:', err);
+      }
+
+      // New empty SOP
+      if (!sopData) {
+        sopData = { title: 'New SOP', subtitle: '', phases: [], section_id: null };
+      }
+
+      // Populate header
+      document.title = sopData.title + ' \u2014 Teams Squared';
+      document.getElementById('sopTitle').textContent = sopData.title;
+      document.getElementById('sopSubtitle').textContent = sopData.subtitle;
+
+      await loadSections();
+      initEmojiPicker();
+      renderPhases();
+
+      // Auto-enter edit mode for new SOPs (admin only)
+      if (IS_NEW && isAdmin()) {
+        toggleEditMode();
+      }
+    })();
+  </script>
+</body>
+</html>

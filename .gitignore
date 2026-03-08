@@ -1,0 +1,26 @@
+# Secrets — never commit
+config.json
+
+# Claude Code
+.claude/
+
+# Legacy local data (now in Supabase)
+data/
+
+# Migration scripts (not needed in production)
+migrate.py
+supabase_setup.sql
+
+# Old files
+Hiring SOP.html
+Teams Squared Logo.png
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hiring Pipeline — Teams Squared</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(165deg, #1A0640 0%, #0F0525 40%, #130830 100%);
+      color: #FFFFFF;
+      overflow-x: hidden;
+    }
+    .orb-1 {
+      position: fixed; top: -200px; left: -200px; width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .orb-2 {
+      position: fixed; bottom: -300px; right: -200px; width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(192, 132, 252, 0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .container { max-width: 740px; margin: 0 auto; padding: 56px 28px 80px; position: relative; z-index: 1; }
+
+    /* Logo header */
+    .logo-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .logo-header img {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+    }
+
+    /* Brand tag */
+    .brand-tag {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.25);
+      padding: 7px 16px; border-radius: 8px;
+    }
+    .brand-dot { width: 7px; height: 7px; border-radius: 50%; background: #8B5CF6; box-shadow: 0 0 8px rgba(139, 92, 246, 0.5); }
+    .brand-text { font-size: 12px; font-weight: 700; color: #C4B5FD; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    h1 { font-size: 40px; font-weight: 800; color: #FFFFFF; margin-bottom: 10px; line-height: 1.15; letter-spacing: -0.025em; }
+    .subtitle { font-size: 17px; color: #B8A8D8; font-weight: 500; line-height: 1.5; margin-bottom: 0; }
+
+    /* Controls */
+    .controls { display: flex; gap: 8px; margin: 36px 0; flex-wrap: wrap; }
+    .ctrl-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+      padding: 8px 18px; border-radius: 9px; border: 1px solid rgba(139, 92, 246, 0.22);
+      background: rgba(139, 92, 246, 0.08); cursor: pointer; color: #B8A8D8; transition: all 0.15s ease;
+    }
+    .ctrl-btn:hover { border-color: rgba(139, 92, 246, 0.4); color: #D8CCEE; background: rgba(139, 92, 246, 0.14); }
+
+    .edit-toggle.active {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.45);
+      color: #D8CCEE;
+      box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+    }
+
+    .controls-right { margin-left: auto; display: flex; gap: 8px; }
+
+    .divider { height: 1px; background: linear-gradient(90deg, rgba(139, 92, 246, 0.25), rgba(139, 92, 246, 0.03)); margin-bottom: 32px; }
+
+    /* Phase */
+    .phase { position: relative; }
+    .phase-line {
+      position: absolute; left: 27px; top: 56px; bottom: -32px; width: 2px; z-index: 0;
+    }
+    .phase-inner { position: relative; z-index: 1; }
+
+    /* Phase header */
+    .phase-header { display: flex; align-items: center; gap: 18px; cursor: pointer; padding: 14px 0; user-select: none; }
+    .phase-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: rgba(139, 92, 246, 0.12); border: 1.5px solid rgba(139, 92, 246, 0.25);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 26px;
+      transition: all 0.2s ease;
+    }
+    .phase.open .phase-icon { box-shadow: 0 0 28px rgba(139, 92, 246, 0.1); }
+    .phase-title { font-weight: 700; font-size: 20px; color: #FFFFFF; letter-spacing: -0.01em; }
+    .phase-subtitle {
+      font-size: 12px; font-weight: 700; color: #FFFFFF;
+      background: linear-gradient(135deg, #6D28D9, #9333EA);
+      padding: 3px 12px; border-radius: 20px; display: inline-block; margin-left: 10px;
+    }
+    .phase-days { font-size: 14px; color: #A99BC8; font-weight: 500; margin-top: 2px; display: block; }
+    .phase-toggle {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.18);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+    .phase.open .phase-toggle { transform: rotate(180deg); }
+
+    /* Phase body */
+    .phase-body {
+      max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+    }
+    .phase.open .phase-body { max-height: 5000px; }
+    .phase-card {
+      margin-left: 74px; margin-bottom: 28px;
+      background: rgba(139, 92, 246, 0.05); border-radius: 18px;
+      border: 1px solid rgba(139, 92, 246, 0.12); padding: 28px 30px;
+    }
+
+    /* Items */
+    .items { display: flex; flex-direction: column; gap: 20px; }
+    .item { display: flex; gap: 14px; align-items: flex-start; }
+    .item-num {
+      width: 30px; height: 30px; border-radius: 9px;
+      background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.25);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
+      font-weight: 700; font-size: 13px;
+    }
+    .item-content { padding-top: 4px; flex: 1; min-width: 0; }
+    .item-text { font-size: 15.5px; color: #EEEBF5; line-height: 1.75; margin: 0; }
+
+    /* Link pills */
+    .link-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .link-pill {
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700;
+      color: #FFFFFF; background: linear-gradient(135deg, #6D28D9, #9333EA);
+      padding: 6px 16px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; line-height: 1.4;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+      transition: all 0.2s ease; text-decoration: none; border: none;
+    }
+    .link-pill:hover {
+      background: linear-gradient(135deg, #7C3AED, #A855F7);
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+      transform: translateY(-1px);
+    }
+    .link-pill svg { flex-shrink: 0; }
+
+    /* Link URL popover (edit mode) */
+    .link-popover {
+      position: absolute;
+      z-index: 40;
+      background: linear-gradient(165deg, #1E0A4A, #140835);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      display: none;
+      width: 320px;
+    }
+
+    .link-popover.visible { display: flex; gap: 8px; align-items: center; }
+
+    .link-popover input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      background: rgba(139, 92, 246, 0.08);
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .link-popover input::placeholder { color: #6B5B8A; }
+
+    .link-popover input:focus {
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+
+    .link-popover button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(135deg, #6D28D9, #9333EA);
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .link-popover button:hover {
+      background: linear-gradient(135deg, #7C3AED, #A855F7);
+    }
+
+    .link-pill.has-url {
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25), 0 0 0 1.5px rgba(74, 222, 128, 0.35);
+    }
+
+    body.edit-mode .link-pill {
+      cursor: pointer;
+    }
+
+    /* Callout */
+    .callout {
+      margin-top: 24px; background: rgba(192, 132, 252, 0.08);
+      border: 1px solid rgba(192, 132, 252, 0.18); border-radius: 14px; padding: 20px 22px;
+    }
+    .callout-title {
+      font-weight: 700; font-size: 13px; color: #D8B4FE;
+      margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .callout-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+    .callout-dot { color: #C084FC; font-size: 8px; line-height: 26px; }
+    .callout-text { font-size: 14.5px; color: #D4C8EC; line-height: 1.7; }
+
+    /* Footer */
+    .footer-note {
+      margin-top: 44px; padding: 18px 22px;
+      background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 14px; display: flex; align-items: center; gap: 12px;
+    }
+    .footer-note span:last-child { font-size: 14px; color: #B8A8D8; line-height: 1.55; }
+
+    /* ===== Edit Mode Styles ===== */
+    .item-text[contenteditable="true"] {
+      outline: none;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: rgba(139, 92, 246, 0.06);
+      transition: border-color 0.2s ease, background 0.2s ease;
+      cursor: text;
+    }
+
+    .item-text[contenteditable="true"]:focus {
+      border-color: rgba(139, 92, 246, 0.45);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .add-step-btn {
+      display: none;
+      width: 100%;
+      padding: 10px;
+      margin-top: 16px;
+      border-radius: 10px;
+      border: 1.5px dashed rgba(139, 92, 246, 0.25);
+      background: transparent;
+      color: #A78BFA;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .add-step-btn:hover {
+      border-color: rgba(139, 92, 246, 0.45);
+      background: rgba(139, 92, 246, 0.06);
+      color: #C4B5FD;
+    }
+
+    body.edit-mode .add-step-btn { display: block; }
+
+    .delete-step-btn {
+      display: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.08);
+      color: #EF4444;
+      font-size: 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 5px;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1;
+    }
+
+    .delete-step-btn:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.45);
+    }
+
+    body.edit-mode .delete-step-btn { display: flex; }
+
+    .reset-btn { display: none; }
+    .reset-btn.visible { display: inline-block; }
+
+    .save-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      color: #4ADE80;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 50;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .save-toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Admin password modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(10, 3, 28, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-card {
+      background: linear-gradient(165deg, #1E0A4A, #140835);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 18px;
+      padding: 32px;
+      max-width: 380px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 8px;
+    }
+
+    .modal-card p {
+      font-size: 14px;
+      color: #A99BC8;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .modal-input-wrap { margin-bottom: 12px; }
+
+    .modal-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      background: rgba(139, 92, 246, 0.08);
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .modal-input::placeholder { color: #6B5B8A; }
+
+    .modal-input:focus {
+      border-color: rgba(139, 92, 246, 0.5);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .modal-input.error {
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #6D28D9, #9333EA);
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+    }
+
+    .modal-btn:hover {
+      background: linear-gradient(135deg, #7C3AED, #A855F7);
+      transform: translateY(-1px);
+    }
+
+    .modal-error {
+      font-size: 13px;
+      color: #EF4444;
+      font-weight: 500;
+      margin-top: 12px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-error.visible { opacity: 1; }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #6B5B8A;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: color 0.15s ease;
+    }
+
+    .modal-close:hover { color: #B8A8D8; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 32px 16px 60px; }
+      h1 { font-size: 30px; }
+      .phase-card { margin-left: 0; padding: 20px 18px; }
+      .phase-header { gap: 12px; }
+      .phase-icon { width: 44px; height: 44px; font-size: 20px; border-radius: 12px; }
+      .phase-title { font-size: 17px; }
+      .phase-line { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb-1"></div>
+  <div class="orb-2"></div>
+
+  <!-- Admin password modal -->
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal-card">
+      <h3>Admin Access Required</h3>
+      <p>Please enter the admin password to make changes. If you don't have this, please contact your hiring manager.</p>
+      <div class="modal-input-wrap">
+        <input type="password" id="adminModalPassword" class="modal-input" placeholder="Admin password" autocomplete="off">
+      </div>
+      <p class="modal-error" id="adminModalError">Incorrect admin password.</p>
+      <button class="modal-btn" onclick="submitAdminAuth()">Continue</button>
+      <button class="modal-close" onclick="closeAdminModal()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div style="margin-bottom: 44px;">
+      <div class="logo-header">
+        <img src="../Updated Teams Squared Logo.jpeg" alt="Teams Squared">
+        <div class="brand-tag">
+          <div class="brand-dot"></div>
+          <span class="brand-text">Teams Squared</span>
+        </div>
+      </div>
+      <h1>Hiring Pipeline</h1>
+      <p class="subtitle">Your step-by-step guide from job post to placement</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="ctrl-btn" onclick="toggleAll(true)">Expand All</button>
+      <button class="ctrl-btn" onclick="toggleAll(false)">Collapse All</button>
+      <div class="controls-right">
+        <button class="ctrl-btn reset-btn" id="resetBtn" onclick="resetEdits()">Reset</button>
+        <button class="ctrl-btn edit-toggle" id="editToggle" onclick="handleEditClick()">&#9998; Edit</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- Phases rendered by JS below -->
+    <div id="phases"></div>
+
+    <!-- Footer -->
+    <div class="footer-note">
+      <span style="font-size: 18px;">💡</span>
+      <span>This is a living document — more phases and detail will be added as the process evolves.</span>
+    </div>
+  </div>
+
+  <!-- Save toast -->
+  <div class="save-toast" id="saveToast">Changes saved</div>
+
+  <!-- Link URL popover (reused for all pills) -->
+  <div class="link-popover" id="linkPopover">
+    <input type="url" placeholder="Paste URL here..." id="linkPopoverInput">
+    <button onclick="saveLinkUrl()">Save</button>
+  </div>
+
+  <script>
+    // =============================================
+    //  SOP IDENTITY (used for localStorage key)
+    //  Each SOP file should have a unique SOP_ID
+    // =============================================
+    const SOP_ID = 'hiring-pipeline';
+    const DEFAULT_ADMIN_PASSWORD = 'lifeisgood2026';
+    const ADMIN_AUTH_KEY = 'sop_admin_authenticated';
+
+    // =============================================
+    //  SERVER-BACKED STATE
+    // =============================================
+    let _editsCache = null;       // null = no edits saved (matches original behavior)
+    let _adminPasswordCache = DEFAULT_ADMIN_PASSWORD;
+
+    // =============================================
+    //  ADMIN AUTH
+    // =============================================
+    function getAdminPassword() {
+      return _adminPasswordCache || DEFAULT_ADMIN_PASSWORD;
+    }
+
+    function isAdminAuthed() {
+      return sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true';
+    }
+
+    function handleEditClick() {
+      if (isEditMode) {
+        // Already in edit mode — this is the "Done" button
+        toggleEditMode();
+        return;
+      }
+
+      if (isAdminAuthed()) {
+        toggleEditMode();
+        return;
+      }
+
+      // Show admin password modal
+      document.getElementById('adminModalPassword').value = '';
+      document.getElementById('adminModalError').classList.remove('visible');
+      document.getElementById('adminModal').classList.add('visible');
+      setTimeout(() => document.getElementById('adminModalPassword').focus(), 100);
+    }
+
+    function submitAdminAuth() {
+      const input = document.getElementById('adminModalPassword');
+      const error = document.getElementById('adminModalError');
+
+      if (input.value === getAdminPassword()) {
+        sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
+        document.getElementById('adminModal').classList.remove('visible');
+        input.value = '';
+        error.classList.remove('visible');
+        toggleEditMode();
+      } else {
+        input.classList.add('error');
+        error.classList.add('visible');
+        input.style.animation = 'none';
+        input.offsetHeight;
+        input.style.animation = 'shake 0.4s ease';
+        setTimeout(() => input.classList.remove('error'), 2000);
+      }
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.remove('visible');
+    }
+
+    document.getElementById('adminModalPassword').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitAdminAuth();
+      if (e.key === 'Escape') closeAdminModal();
+    });
+
+    // =============================================
+    //  PHASE DATA
+    // =============================================
+    const phases = [
+      {
+        id: 1, icon: "🚀", title: "Setup & Job Posting", days: "Day 1–2", accent: "#A78BFA",
+        items: [
+          { text: "Check the Notion row for the role — make sure all details are filled in and the blank screening sheet is attached.", links: ["Screening Sheet Template"] },
+          { text: "Chat with the hiring manager during the WIP — are we Job Posting, Headhunting, or doing both?" },
+          { text: "If Headhunting → switch to the Headhunting SOP. If Job Posting → keep going below." },
+          { text: "Create the JD using the Teams Squared JD Builder.", links: ["JD Builder", "Tutorial Video"] },
+          { text: "Post the job on Zoho Recruit and LinkedIn.", links: ["Watch Tutorial Video"] },
+          { text: "Let the ad run for 2 days or until you hit 100 CVs, then switch it off. Spot check ~10 CVs and report back to the hiring manager on volume + quality." },
+        ],
+      },
+      {
+        id: 2, icon: "🔍", title: "Shortlisting & Screening", days: "Day 3–4", accent: "#C084FC",
+        items: [
+          { text: 'Start shortlisting in Zoho Recruit — review CVs and find potential fits. Target: 20 CVs → move to "Potential Fit." CV review must be at 0 when done.' },
+          { text: 'Deeper review of the Potential Fit pool — narrow to 5–10 CVs → move to "Great Fit."' },
+          { text: "Add all Potential Fits + Great Fits to the screening sheet on Notion, and link it in the Master Sheet.", links: ["Master Sheet"] },
+          { text: "Start screening calls with your strongest candidates first, then work through the rest. Target: 8 solid candidates." },
+          { text: "Report to the hiring manager during daily WIPs — share quality thoughts and flag if it's too low." },
+          { text: "Lock in 3–5 final candidates to move forward, with notice periods and salary confirmations." },
+        ],
+        callout: {
+          title: "Don't forget during screening",
+          items: [
+            'Move junior or better-suited candidates → "Fit for Another Role" in Zoho',
+            'Move junior candidates → "Not Convinced" in Zoho',
+            "Collect: notice periods, salary expectations, current salaries & English proficiency ratings",
+          ],
+        },
+      },
+      {
+        id: 3, icon: "📋", title: "Assessments & Founder Interviews", days: "Day 4–6", accent: "#E879F9",
+        items: [
+          { text: "Send the assessment + disclosure form to candidates. Not sure if assessment is needed? Ask the hiring manager or Stefania.", links: ["Template Email to Candidate", "Disclosure Form"] },
+          { text: "Schedule founder interviews with Abdul or Amresh.", links: ["Template Email", "Interview Process Guide"] },
+          { text: "Ask candidates if they have service letters or references available pre-offer (once they pass founder interviews)." },
+        ],
+      },
+      {
+        id: 4, icon: "✅", title: "Post Founder Interview", days: "Day 6+", accent: "#818CF8",
+        subtitle: "If Successful",
+        items: [
+          { text: "Work with hiring manager to add all candidate details (asks, rates, notes) to sheets — the team needs these for Docks." },
+          { text: "Confirm disclosure form + assessment are complete. Let the candidate know it's required to proceed." },
+          { text: "Coordinate client interviews between candidate and client.", links: ["Template Email", "How-To Guide"] },
+          { text: "Coordinate and complete any reference checks needed." },
+        ],
+      },
+    ];
+
+    const arrowSvg = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 9L9 3M9 3H4.5M9 3V7.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const chevronSvg = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    // =============================================
+    //  EDIT MODE — Persistence
+    // =============================================
+    let isEditMode = false;
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function getSavedEdits() {
+      if (_editsCache === null) return null;
+      try {
+        // Normalize format (same logic, reading from in-memory cache)
+        const normalized = {};
+        for (const [key, val] of Object.entries(_editsCache)) {
+          if (Array.isArray(val)) {
+            // Old format — array of text strings
+            normalized[key] = { texts: val, linkUrls: {} };
+          } else if (val && typeof val === 'object' && val.texts) {
+            // New format
+            normalized[key] = { texts: val.texts, linkUrls: val.linkUrls || {} };
+          }
+        }
+        return Object.keys(normalized).length > 0 ? normalized : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getEffectivePhases() {
+      const saved = getSavedEdits();
+      if (!saved) return phases;
+
+      return phases.map(phase => {
+        const savedPhase = saved[phase.id];
+        if (!savedPhase) return phase;
+
+        const savedTexts = savedPhase.texts;
+        const savedLinkUrls = savedPhase.linkUrls || {};
+
+        const effectiveItems = savedTexts.map((text, i) => {
+          const original = phase.items[i];
+          return {
+            text: text,
+            links: original ? original.links : undefined,
+            _linkUrls: savedLinkUrls,
+            _itemIndex: i
+          };
+        });
+
+        return { ...phase, items: effectiveItems, _linkUrls: savedLinkUrls };
+      });
+    }
+
+    // =============================================
+    //  RENDERING
+    // =============================================
+    function renderPhases() {
+      const effectivePhases = getEffectivePhases();
+      const container = document.getElementById("phases");
+      container.innerHTML = effectivePhases.map((phase, idx) => {
+        const isLast = idx === effectivePhases.length - 1;
+        const lineGrad = `linear-gradient(180deg, ${phase.accent}50, ${phase.accent}08)`;
+
+        const phaseLinkUrls = phase._linkUrls || {};
+
+        let itemsHtml = phase.items.map((item, i) => {
+          let linksHtml = "";
+          if (item.links && item.links.length > 0) {
+            linksHtml = `<div class="link-row">${item.links.map(l => {
+              const urlKey = `${i}:${l}`;
+              const savedUrl = phaseLinkUrls[urlKey] || '';
+              const href = savedUrl || '#';
+              const target = savedUrl ? ' target="_blank" rel="noopener"' : '';
+              const hasUrlClass = savedUrl ? ' has-url' : '';
+              return `<a class="link-pill${hasUrlClass}" href="${escapeHtml(href)}"${target} data-phase-id="${phase.id}" data-item-index="${i}" data-link-label="${escapeHtml(l)}">${arrowSvg} ${l}</a>`;
+            }).join("")}</div>`;
+          }
+          return `
+            <div class="item" data-phase-id="${phase.id}" data-item-index="${i}">
+              <div class="item-num" style="color: ${phase.accent}">${i + 1}</div>
+              <div class="item-content">
+                <p class="item-text">${escapeHtml(item.text)}</p>
+                ${linksHtml}
+              </div>
+              <button class="delete-step-btn" onclick="deleteStep(${phase.id}, ${i})" title="Remove step">&times;</button>
+            </div>`;
+        }).join("");
+
+        let calloutHtml = "";
+        if (phase.callout) {
+          calloutHtml = `
+            <div class="callout">
+              <div class="callout-title">⚡ ${phase.callout.title}</div>
+              ${phase.callout.items.map(note => `
+                <div class="callout-item">
+                  <span class="callout-dot">●</span>
+                  <span class="callout-text">${note}</span>
+                </div>
+              `).join("")}
+            </div>`;
+        }
+
+        const subtitleHtml = phase.subtitle ? `<span class="phase-subtitle">${phase.subtitle}</span>` : "";
+
+        return `
+          <div class="phase open" data-id="${phase.id}">
+            ${!isLast ? `<div class="phase-line" style="background: ${lineGrad}"></div>` : ""}
+            <div class="phase-inner">
+              <div class="phase-header" onclick="togglePhase(${phase.id})">
+                <div class="phase-icon">${phase.icon}</div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; flex-wrap: wrap;">
+                    <span class="phase-title">${phase.title}</span>
+                    ${subtitleHtml}
+                  </div>
+                  <span class="phase-days">${phase.days}</span>
+                </div>
+                <div class="phase-toggle">${chevronSvg}</div>
+              </div>
+              <div class="phase-body">
+                <div class="phase-card">
+                  <div class="items">${itemsHtml}</div>
+                  ${calloutHtml}
+                  <button class="add-step-btn" onclick="addStep(${phase.id}, '${phase.accent}')">+ Add Step</button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      }).join("");
+
+      updateResetBtn();
+    }
+
+    // =============================================
+    //  EDIT MODE — Toggle & Actions
+    // =============================================
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const btn = document.getElementById('editToggle');
+
+      if (isEditMode) {
+        document.body.classList.add('edit-mode');
+        btn.classList.add('active');
+        btn.innerHTML = '&#10003; Done';
+
+        document.querySelectorAll('.item-text').forEach(el => {
+          el.setAttribute('contenteditable', 'true');
+        });
+
+        // Intercept link pill clicks to show URL popover
+        document.querySelectorAll('.link-pill').forEach(pill => {
+          pill.addEventListener('click', linkPillEditHandler);
+        });
+      } else {
+        document.body.classList.remove('edit-mode');
+        btn.classList.remove('active');
+        btn.innerHTML = '&#9998; Edit';
+
+        document.querySelectorAll('.item-text').forEach(el => {
+          el.removeAttribute('contenteditable');
+        });
+
+        // Remove edit click handlers from pills
+        document.querySelectorAll('.link-pill').forEach(pill => {
+          pill.removeEventListener('click', linkPillEditHandler);
+        });
+
+        closeLinkPopover();
+        saveEdits();
+      }
+    }
+
+    function linkPillEditHandler(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      showLinkPopover(e.currentTarget);
+    }
+
+    function saveEdits() {
+      // Preserve existing link URLs from in-memory cache
+      const existingSaved = getSavedEdits();
+      const edits = {};
+
+      document.querySelectorAll('.phase').forEach(phaseEl => {
+        const phaseId = phaseEl.dataset.id;
+        const texts = [];
+        phaseEl.querySelectorAll('.item .item-text').forEach(textEl => {
+          texts.push(textEl.textContent.trim());
+        });
+
+        // Carry forward saved linkUrls (they're set via the popover, not the DOM)
+        const existingLinkUrls = (existingSaved && existingSaved[phaseId]) ? existingSaved[phaseId].linkUrls : {};
+        edits[phaseId] = { texts: texts, linkUrls: existingLinkUrls || {} };
+      });
+
+      // Update in-memory cache
+      _editsCache = edits;
+
+      // Persist to server (fire-and-forget)
+      fetch(`/api/edits/${SOP_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(edits)
+      }).catch(err => console.error('Failed to save edits:', err));
+
+      showSaveToast();
+      updateResetBtn();
+    }
+
+    function showSaveToast() {
+      const toast = document.getElementById('saveToast');
+      toast.classList.add('visible');
+      setTimeout(() => toast.classList.remove('visible'), 2000);
+    }
+
+    function updateResetBtn() {
+      const resetBtn = document.getElementById('resetBtn');
+      if (getSavedEdits()) {
+        resetBtn.classList.add('visible');
+      } else {
+        resetBtn.classList.remove('visible');
+      }
+    }
+
+    function addStep(phaseId, accent) {
+      const phaseEl = document.querySelector(`.phase[data-id="${phaseId}"]`);
+      const itemsContainer = phaseEl.querySelector('.items');
+      const currentCount = itemsContainer.querySelectorAll('.item').length;
+      const newIndex = currentCount;
+
+      const newItemHtml = `
+        <div class="item" data-phase-id="${phaseId}" data-item-index="${newIndex}">
+          <div class="item-num" style="color: ${accent}">${newIndex + 1}</div>
+          <div class="item-content">
+            <p class="item-text" contenteditable="true">New step — click to edit</p>
+          </div>
+          <button class="delete-step-btn" onclick="deleteStep(${phaseId}, ${newIndex})" title="Remove step" style="display: flex;">&times;</button>
+        </div>`;
+
+      itemsContainer.insertAdjacentHTML('beforeend', newItemHtml);
+
+      const newTextEl = itemsContainer.querySelector('.item:last-child .item-text');
+      newTextEl.focus();
+
+      const range = document.createRange();
+      range.selectNodeContents(newTextEl);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+
+      saveEdits();
+    }
+
+    function deleteStep(phaseId, itemIndex) {
+      const phaseEl = document.querySelector(`.phase[data-id="${phaseId}"]`);
+      const items = phaseEl.querySelectorAll('.item');
+
+      if (items.length <= 1) return;
+
+      items[itemIndex].remove();
+      renumberItems(phaseEl);
+      saveEdits();
+    }
+
+    function renumberItems(phaseEl) {
+      const items = phaseEl.querySelectorAll('.item');
+      const phaseId = phaseEl.dataset.id;
+      const phase = phases.find(p => String(p.id) === phaseId);
+      const accent = phase ? phase.accent : '#A78BFA';
+
+      items.forEach((item, i) => {
+        item.dataset.itemIndex = i;
+        const numEl = item.querySelector('.item-num');
+        numEl.textContent = i + 1;
+
+        const deleteBtn = item.querySelector('.delete-step-btn');
+        if (deleteBtn) {
+          deleteBtn.onclick = () => deleteStep(parseInt(phaseId), i);
+        }
+      });
+    }
+
+    function resetEdits() {
+      if (confirm('Reset all edits to the original SOP content? This cannot be undone.')) {
+        // Clear in-memory cache
+        _editsCache = null;
+
+        // Delete from server (fire-and-forget)
+        fetch(`/api/edits/${SOP_ID}`, { method: 'DELETE' })
+          .catch(err => console.error('Failed to delete edits:', err));
+
+        if (isEditMode) {
+          isEditMode = false;
+          document.body.classList.remove('edit-mode');
+          const btn = document.getElementById('editToggle');
+          btn.classList.remove('active');
+          btn.innerHTML = '&#9998; Edit';
+        }
+
+        renderPhases();
+      }
+    }
+
+    // =============================================
+    //  LINK URL EDITING (popover)
+    // =============================================
+    let activeLinkPill = null;
+
+    function showLinkPopover(pillEl) {
+      const popover = document.getElementById('linkPopover');
+      const input = document.getElementById('linkPopoverInput');
+
+      activeLinkPill = pillEl;
+
+      // Get current URL (if any)
+      const currentHref = pillEl.getAttribute('href');
+      input.value = (currentHref && currentHref !== '#') ? currentHref : '';
+
+      // Position the popover below the pill
+      const rect = pillEl.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+
+      popover.style.position = 'absolute';
+      popover.style.top = (rect.bottom + scrollTop + 6) + 'px';
+      popover.style.left = Math.max(8, rect.left + scrollLeft - 40) + 'px';
+
+      popover.classList.add('visible');
+      input.focus();
+      input.select();
+    }
+
+    function saveLinkUrl() {
+      if (!activeLinkPill) return;
+
+      const input = document.getElementById('linkPopoverInput');
+      const url = input.value.trim();
+      const phaseId = activeLinkPill.dataset.phaseId;
+      const itemIndex = activeLinkPill.dataset.itemIndex;
+      const linkLabel = activeLinkPill.dataset.linkLabel;
+      const urlKey = `${itemIndex}:${linkLabel}`;
+
+      // Update the pill's href and styling
+      if (url) {
+        activeLinkPill.setAttribute('href', url);
+        activeLinkPill.setAttribute('target', '_blank');
+        activeLinkPill.setAttribute('rel', 'noopener');
+        activeLinkPill.classList.add('has-url');
+      } else {
+        activeLinkPill.setAttribute('href', '#');
+        activeLinkPill.removeAttribute('target');
+        activeLinkPill.removeAttribute('rel');
+        activeLinkPill.classList.remove('has-url');
+      }
+
+      // Update in-memory cache
+      const saved = getSavedEdits() || {};
+      if (!saved[phaseId]) {
+        // Build texts from DOM for this phase
+        const phaseEl = document.querySelector(`.phase[data-id="${phaseId}"]`);
+        const texts = [];
+        phaseEl.querySelectorAll('.item .item-text').forEach(textEl => {
+          texts.push(textEl.textContent.trim());
+        });
+        saved[phaseId] = { texts: texts, linkUrls: {} };
+      }
+
+      if (url) {
+        saved[phaseId].linkUrls[urlKey] = url;
+      } else {
+        delete saved[phaseId].linkUrls[urlKey];
+      }
+
+      _editsCache = saved;
+
+      // Persist to server (fire-and-forget)
+      fetch(`/api/edits/${SOP_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saved)
+      }).catch(err => console.error('Failed to save link URL:', err));
+
+      closeLinkPopover();
+      showSaveToast();
+      updateResetBtn();
+    }
+
+    function closeLinkPopover() {
+      const popover = document.getElementById('linkPopover');
+      popover.classList.remove('visible');
+      activeLinkPill = null;
+    }
+
+    // Handle Enter key in link popover input
+    document.getElementById('linkPopoverInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveLinkUrl(); }
+      if (e.key === 'Escape') { e.preventDefault(); closeLinkPopover(); }
+    });
+
+    // Close popover when clicking outside
+    document.addEventListener('click', (e) => {
+      const popover = document.getElementById('linkPopover');
+      if (popover.classList.contains('visible') && !popover.contains(e.target) && !e.target.classList.contains('link-pill')) {
+        closeLinkPopover();
+      }
+    });
+
+    // Auto-save on content changes (debounced)
+    let saveTimeout;
+    document.addEventListener('input', (e) => {
+      if (e.target.classList.contains('item-text') && isEditMode) {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => saveEdits(), 800);
+      }
+    });
+
+    // =============================================
+    //  PHASE TOGGLE
+    // =============================================
+    function togglePhase(id) {
+      const el = document.querySelector(`.phase[data-id="${id}"]`);
+      if (el) el.classList.toggle("open");
+    }
+
+    function toggleAll(open) {
+      document.querySelectorAll(".phase").forEach(el => {
+        if (open) el.classList.add("open");
+        else el.classList.remove("open");
+      });
+    }
+
+    // =============================================
+    //  INIT — Load data from server, then render
+    // =============================================
+    (async function init() {
+      // Load edits from server
+      try {
+        const editsResp = await fetch(`/api/edits/${SOP_ID}`);
+        const editsData = await editsResp.json();
+        if (editsData && typeof editsData === 'object' && Object.keys(editsData).length > 0) {
+          _editsCache = editsData;
+        }
+      } catch (err) {
+        console.error('Failed to load edits, starting with defaults:', err);
+      }
+
+      // Load admin password from server (so admin auth modal works)
+      try {
+        const pwResp = await fetch('/api/passwords');
+        const pwData = await pwResp.json();
+        if (pwData && pwData.adminPassword) {
+          _adminPasswordCache = pwData.adminPassword;
+        }
+      } catch (err) {
+        console.error('Failed to load passwords:', err);
+      }
+
+      renderPhases();
+    })();
+  </script>
+</body>
+</html>
