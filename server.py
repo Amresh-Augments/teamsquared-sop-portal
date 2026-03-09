@@ -80,6 +80,11 @@ class SOPHandler(SimpleHTTPRequestHandler):
                 "SUPABASE_URL": cfg["SUPABASE_URL"],
                 "SUPABASE_ANON_KEY": cfg["SUPABASE_ANON_KEY"],
             })
+        elif path == "/api/me":
+            user_id = self._verify_user()
+            if not user_id:
+                return
+            self._get_my_sections(user_id)
         elif path == "/api/admin/users":
             admin = self._verify_admin()
             if not admin:
@@ -123,7 +128,24 @@ class SOPHandler(SimpleHTTPRequestHandler):
         else:
             self._send_error(404, "Not found")
 
-    # ----- Admin verification -----
+    # ----- Auth verification -----
+
+    def _verify_user(self):
+        """Verify Bearer token. Returns user_id or None."""
+        auth_header = self.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            self._send_error(401, "Missing authorization token")
+            return None
+
+        token = auth_header[7:]
+        sb = get_supabase()
+
+        try:
+            user_resp = sb.auth.get_user(token)
+            return user_resp.user.id
+        except Exception:
+            self._send_error(401, "Invalid token")
+            return None
 
     def _verify_admin(self):
         """Verify Bearer token and check is_admin. Returns user_id or None."""
@@ -152,6 +174,17 @@ class SOPHandler(SimpleHTTPRequestHandler):
             return None
 
         return user_id
+
+    # ----- User endpoints -----
+
+    def _get_my_sections(self, user_id):
+        sb = get_supabase()
+        try:
+            result = sb.table("user_sections").select("section_id").eq("user_id", user_id).execute()
+            section_ids = [row["section_id"] for row in (result.data or [])]
+            self._send_json({"section_ids": section_ids})
+        except Exception as e:
+            self._send_error(500, str(e))
 
     # ----- Admin endpoints -----
 

@@ -1132,6 +1132,7 @@
     // =============================================
     let supabaseClient = null;
     let currentProfile = null;
+    let mySectionIds = null; // null = not loaded yet, [] = no access
     let allSections = [];
     let sops = [];
     let allUsers = [];
@@ -1172,7 +1173,26 @@
       }
 
       await loadSections();
+      await loadMySections();
       await loadRegistry();
+    }
+
+    async function loadMySections() {
+      if (isAdmin()) {
+        mySectionIds = null; // admins see everything
+        return;
+      }
+      try {
+        const token = await getAuthToken();
+        const resp = await fetch('/api/me', {
+          headers: { 'Authorization': 'Bearer ' + token },
+        });
+        const result = await resp.json();
+        mySectionIds = result.section_ids || [];
+      } catch (err) {
+        console.error('Failed to load sections:', err);
+        mySectionIds = [];
+      }
     }
 
     async function loadProfile() {
@@ -1241,6 +1261,7 @@
     async function signOut() {
       await supabaseClient.auth.signOut();
       currentProfile = null;
+      mySectionIds = null;
       sops = [];
       allSections = [];
       document.getElementById('welcomeLine1').textContent = 'Teams Squared';
@@ -1278,10 +1299,17 @@
       const container = document.getElementById('navItems');
       container.innerHTML = '';
 
-      // Filter SOPs
-      const filtered = filterText
+      // Filter SOPs by search text
+      let filtered = filterText
         ? sops.filter(s => s.title.toLowerCase().includes(filterText))
         : sops;
+
+      // Filter by section access (non-admins only see assigned sections)
+      if (mySectionIds !== null) {
+        filtered = filtered.filter(sop =>
+          sop.section_id && mySectionIds.includes(sop.section_id)
+        );
+      }
 
       // Group by section
       const grouped = {};
@@ -1387,9 +1415,16 @@
       const container = document.getElementById('mobileNavItems');
       container.innerHTML = '';
 
-      const filtered = filterText
+      let filtered = filterText
         ? sops.filter(s => s.title.toLowerCase().includes(filterText))
         : sops;
+
+      // Filter by section access (non-admins only see assigned sections)
+      if (mySectionIds !== null) {
+        filtered = filtered.filter(sop =>
+          sop.section_id && mySectionIds.includes(sop.section_id)
+        );
+      }
 
       const grouped = {};
       const uncategorized = [];
@@ -1716,6 +1751,9 @@
 
       try {
         const token = await getAuthToken();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+
         const resp = await fetch('/api/admin/invite', {
           method: 'POST',
           headers: {
@@ -1728,7 +1766,9 @@
             is_admin: isAdminChecked,
             section_ids: sectionIds,
           }),
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
 
         const result = await resp.json();
         if (result.error) {
@@ -1744,7 +1784,7 @@
           loadUsers();
         }
       } catch (err) {
-        msg.textContent = 'Network error. Please try again.';
+        msg.textContent = err.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Network error. Please try again.';
         msg.className = 'admin-msg error';
       }
 
