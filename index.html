@@ -180,7 +180,7 @@
     .nav-section-group.collapsed .section-chevron { transform: rotate(-90deg); }
     .nav-section-group.collapsed .nav-section-items { display: none; }
     .nav-section-items { padding-left: 4px; }
-    .nav-section-items .nav-item { padding-left: 20px; }
+    .nav-section-items .nav-item { padding-left: 12px; }
 
     /* Drag-and-drop feedback */
     .nav-item.dragging { opacity: 0.35; }
@@ -1742,7 +1742,14 @@
       setActive(sop.id);
       hideAllPages();
       const frame = document.getElementById('sopFrame');
-      frame.src = 'sops/viewer.html?id=' + sop.id + (sop.isNew ? '&new=true' : '');
+      const params = new URLSearchParams({
+        id: sop.id,
+        sbUrl: supabaseClient.supabaseUrl || '',
+        sbKey: supabaseClient.supabaseKey || '',
+        admin: isAdmin() ? '1' : '0',
+      });
+      if (sop.isNew) params.set('new', 'true');
+      frame.src = 'sops/viewer.html?' + params.toString();
       frame.classList.add('visible');
     }
 

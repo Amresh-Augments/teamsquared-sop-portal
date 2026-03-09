@@ -505,6 +505,9 @@
     const urlParams = new URLSearchParams(window.location.search);
     const SOP_ID = urlParams.get('id');
     const IS_NEW = urlParams.get('new') === 'true';
+    const PASSED_SB_URL = urlParams.get('sbUrl');
+    const PASSED_SB_KEY = urlParams.get('sbKey');
+    const PASSED_ADMIN = urlParams.get('admin');
 
     // =============================================
     //  STATE
@@ -522,13 +525,31 @@
     //  SUPABASE INIT
     // =============================================
     async function initSupabase() {
-      const resp = await fetch('/api/config');
-      const cfg = await resp.json();
-      sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+      let sbUrl, sbKey;
 
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        await loadProfile();
+      if (PASSED_SB_URL && PASSED_SB_KEY) {
+        // Fast path: use config passed from parent
+        sbUrl = PASSED_SB_URL;
+        sbKey = PASSED_SB_KEY;
+      } else {
+        // Fallback: fetch config from server
+        const resp = await fetch('/api/config');
+        const cfg = await resp.json();
+        sbUrl = cfg.SUPABASE_URL;
+        sbKey = cfg.SUPABASE_ANON_KEY;
+      }
+
+      sb = window.supabase.createClient(sbUrl, sbKey);
+
+      // If admin flag passed from parent, use it directly (skip profile fetch)
+      if (PASSED_ADMIN !== null) {
+        currentProfile = { is_admin: PASSED_ADMIN === '1' };
+        updateViewerUIForRole();
+      } else {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          await loadProfile();
+        }
       }
     }
 
