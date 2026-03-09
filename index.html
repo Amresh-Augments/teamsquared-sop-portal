@@ -2032,12 +2032,18 @@
     //  POSTMESSAGE LISTENER
     // =============================================
     window.addEventListener('message', async (e) => {
-      if (e.data && e.data.type === 'sop-deleted') {
-        await loadRegistry();
+      if (!e.data || !e.data.type) return;
+      if (e.data.type === 'sop-deleted') {
+        sops = sops.filter(s => s.id !== e.data.sopId);
+        buildNav();
         showHome();
-      } else if (e.data && e.data.type === 'sop-created') {
+        await loadRegistry(); // refresh from server in background
+      } else if (e.data.type === 'sop-title-changed') {
+        const sop = sops.find(s => s.id === e.data.sopId);
+        if (sop) { sop.title = e.data.title; buildNav(); }
+      } else if (e.data.type === 'sop-created') {
         await loadRegistry();
-      } else if (e.data && e.data.type === 'sop-section-changed') {
+      } else if (e.data.type === 'sop-section-changed') {
         await loadRegistry();
       }
     });
