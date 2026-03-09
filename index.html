@@ -416,6 +416,18 @@
     }
 
     .login-error.visible { opacity: 1; }
+    .login-error.success { color: #4ADE80; opacity: 1; }
+
+    .forgot-password-link {
+      display: inline-block;
+      margin-top: 14px;
+      font-size: 13px;
+      color: #A78BFA;
+      cursor: pointer;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+    .forgot-password-link:hover { color: #C4B5FD; }
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
@@ -956,6 +968,8 @@
       </div>
       <button class="login-btn" id="loginBtn" onclick="attemptLogin()">Sign In</button>
       <p class="login-error" id="loginError"></p>
+      <a class="forgot-password-link" onclick="sendPasswordReset()">Forgot your password?</a>
+      <p class="login-error" id="resetMsg"></p>
     </div>
   </div>
 
@@ -1275,6 +1289,30 @@
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
       }
+    }
+
+    async function sendPasswordReset() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const msg = document.getElementById('resetMsg');
+
+      if (!email) {
+        msg.textContent = 'Please enter your email above first.';
+        msg.className = 'login-error visible';
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+
+      if (error) {
+        msg.textContent = error.message || 'Failed to send reset email.';
+        msg.className = 'login-error visible';
+      } else {
+        msg.textContent = 'Password reset link sent to ' + email;
+        msg.className = 'login-error success visible';
+      }
+      setTimeout(() => { msg.className = 'login-error'; }, 5000);
     }
 
     document.getElementById('loginPassword').addEventListener('keydown', (e) => {
