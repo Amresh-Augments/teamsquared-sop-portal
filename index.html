@@ -1622,6 +1622,7 @@
       const nameInput = document.getElementById('newSectionName');
       const iconBtn = document.getElementById('newSectionIconBtn');
       const msg = document.getElementById('sectionMsg');
+      const btn = document.querySelector('.admin-save-btn[onclick="addSection()"]');
       const name = nameInput.value.trim();
       const icon = iconBtn.textContent.trim() || '\u{1F4C1}';
 
@@ -1631,28 +1632,41 @@
         return;
       }
 
-      const { error } = await supabaseClient.from('sections').insert({
-        name: name,
-        icon: icon,
-        display_order: allSections.length,
-      });
+      btn.disabled = true;
+      btn.textContent = 'Adding...';
 
-      if (error) {
-        msg.textContent = 'Failed: ' + error.message;
+      try {
+        const { error } = await supabaseClient.from('sections').insert({
+          name: name,
+          icon: icon,
+          display_order: allSections.length,
+        });
+
+        if (error) {
+          msg.textContent = 'Failed: ' + error.message;
+          msg.className = 'admin-msg error';
+          btn.disabled = false;
+          btn.textContent = 'Add';
+          return;
+        }
+
+        nameInput.value = '';
+        iconBtn.textContent = '\u{1F4C1}';
+        msg.textContent = 'Section added!';
+        msg.className = 'admin-msg success';
+        setTimeout(() => msg.className = 'admin-msg', 3000);
+
+        await loadSections();
+        renderSectionList();
+        renderInviteSections();
+        buildNav();
+      } catch (err) {
+        msg.textContent = 'Network error. Please try again.';
         msg.className = 'admin-msg error';
-        return;
       }
 
-      nameInput.value = '';
-      iconBtn.textContent = '\u{1F4C1}';
-      msg.textContent = 'Section added!';
-      msg.className = 'admin-msg success';
-      setTimeout(() => msg.className = 'admin-msg', 3000);
-
-      await loadSections();
-      renderSectionList();
-      renderInviteSections();
-      buildNav();
+      btn.disabled = false;
+      btn.textContent = 'Add';
     }
 
     async function deleteSection(sectionId) {
@@ -1680,6 +1694,7 @@
       const displayName = document.getElementById('inviteDisplayName').value.trim();
       const isAdminChecked = document.getElementById('inviteIsAdmin').checked;
       const msg = document.getElementById('inviteMsg');
+      const btn = document.querySelector('.admin-save-btn[onclick="inviteUser()"]');
 
       const sectionIds = [];
       document.querySelectorAll('#inviteSections input:checked').forEach(cb => {
@@ -1692,34 +1707,48 @@
         return;
       }
 
-      const token = await getAuthToken();
-      const resp = await fetch('/api/admin/invite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-        },
-        body: JSON.stringify({
-          email: email,
-          display_name: displayName,
-          is_admin: isAdminChecked,
-          section_ids: sectionIds,
-        }),
-      });
+      // Show loading state
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      msg.textContent = '';
+      msg.className = 'admin-msg';
 
-      const result = await resp.json();
-      if (result.error) {
-        msg.textContent = result.error;
+      try {
+        const token = await getAuthToken();
+        const resp = await fetch('/api/admin/invite', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+          body: JSON.stringify({
+            email: email,
+            display_name: displayName,
+            is_admin: isAdminChecked,
+            section_ids: sectionIds,
+          }),
+        });
+
+        const result = await resp.json();
+        if (result.error) {
+          msg.textContent = result.error;
+          msg.className = 'admin-msg error';
+        } else {
+          msg.textContent = 'Invite sent to ' + email + '!';
+          msg.className = 'admin-msg success';
+          document.getElementById('inviteEmail').value = '';
+          document.getElementById('inviteDisplayName').value = '';
+          document.getElementById('inviteIsAdmin').checked = false;
+          document.querySelectorAll('#inviteSections input').forEach(cb => cb.checked = false);
+          loadUsers();
+        }
+      } catch (err) {
+        msg.textContent = 'Network error. Please try again.';
         msg.className = 'admin-msg error';
-      } else {
-        msg.textContent = 'Invite sent to ' + email + '!';
-        msg.className = 'admin-msg success';
-        document.getElementById('inviteEmail').value = '';
-        document.getElementById('inviteDisplayName').value = '';
-        document.getElementById('inviteIsAdmin').checked = false;
-        document.querySelectorAll('#inviteSections input').forEach(cb => cb.checked = false);
-        loadUsers();
       }
+
+      btn.disabled = false;
+      btn.textContent = 'Send Invite';
       setTimeout(() => msg.className = 'admin-msg', 4000);
     }
 
