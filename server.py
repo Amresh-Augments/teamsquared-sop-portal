@@ -5,6 +5,7 @@ import json
 import os
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+from socketserver import ThreadingMixIn
 from urllib.parse import urlparse
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
@@ -308,10 +309,14 @@ class SOPHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+
+
 if __name__ == "__main__":
     os.chdir(Path(__file__).parent)
 
     port = int(os.environ.get("PORT", 5000))
-    server = HTTPServer(("0.0.0.0", port), SOPHandler)
+    server = ThreadedHTTPServer(("0.0.0.0", port), SOPHandler)
     print(f"SOP Portal server running on http://localhost:{port}")
     server.serve_forever()

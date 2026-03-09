@@ -1750,27 +1750,32 @@
       msg.className = 'admin-msg';
 
       try {
-        const token = await getAuthToken();
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        const invitePromise = (async () => {
+          const token = await getAuthToken();
+          if (!token) throw new Error('Not authenticated. Please sign in again.');
 
-        const resp = await fetch('/api/admin/invite', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-          },
-          body: JSON.stringify({
-            email: email,
-            display_name: displayName,
-            is_admin: isAdminChecked,
-            section_ids: sectionIds,
-          }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
+          const resp = await fetch('/api/admin/invite', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token,
+            },
+            body: JSON.stringify({
+              email: email,
+              display_name: displayName,
+              is_admin: isAdminChecked,
+              section_ids: sectionIds,
+            }),
+          });
+          return await resp.json();
+        })();
 
-        const result = await resp.json();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timed out. Please try again.')), 30000)
+        );
+
+        const result = await Promise.race([invitePromise, timeoutPromise]);
+
         if (result.error) {
           msg.textContent = result.error;
           msg.className = 'admin-msg error';
@@ -1784,7 +1789,7 @@
           loadUsers();
         }
       } catch (err) {
-        msg.textContent = err.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Network error. Please try again.';
+        msg.textContent = err.message || 'Network error. Please try again.';
         msg.className = 'admin-msg error';
       }
 
