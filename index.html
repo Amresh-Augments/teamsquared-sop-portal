@@ -959,6 +959,23 @@
     </div>
   </div>
 
+  <!-- Set Password modal (shown after invite acceptance) -->
+  <div class="login-overlay hidden" id="setPasswordOverlay">
+    <div class="login-card">
+      <img src="Updated Teams Squared Logo.jpeg" alt="Teams Squared" class="login-logo">
+      <h2 class="login-title">Set Your Password</h2>
+      <p class="login-subtitle">Create a password to access the SOP Portal</p>
+      <div class="login-input-wrap">
+        <input type="password" id="setPasswordInput" class="login-input" placeholder="New password" autocomplete="new-password">
+      </div>
+      <div class="login-input-wrap">
+        <input type="password" id="confirmPasswordInput" class="login-input" placeholder="Confirm password" autocomplete="new-password">
+      </div>
+      <button class="login-btn" id="setPasswordBtn" onclick="submitSetPassword()">Set Password</button>
+      <p class="login-error" id="setPasswordError"></p>
+    </div>
+  </div>
+
   <!-- Create SOP modal -->
   <div class="modal-overlay" id="createSopModal">
     <div class="modal-card">
@@ -1153,6 +1170,15 @@
       // Listen for auth changes
       supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
+          // Check if this is an invite acceptance or password recovery
+          const hash = window.location.hash;
+          if (hash.includes('type=invite') || hash.includes('type=recovery')) {
+            // Clear the hash so it doesn't retrigger
+            history.replaceState(null, '', window.location.pathname);
+            await onLoggedIn();
+            showSetPasswordModal();
+            return;
+          }
           await onLoggedIn();
         } else if (event === 'SIGNED_OUT') {
           currentProfile = null;
@@ -1256,6 +1282,55 @@
     });
     document.getElementById('loginEmail').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('loginPassword').focus();
+    });
+
+    function showSetPasswordModal() {
+      document.getElementById('setPasswordOverlay').classList.remove('hidden');
+      setTimeout(() => document.getElementById('setPasswordInput').focus(), 100);
+    }
+
+    async function submitSetPassword() {
+      const pw = document.getElementById('setPasswordInput').value;
+      const confirm = document.getElementById('confirmPasswordInput').value;
+      const error = document.getElementById('setPasswordError');
+      const btn = document.getElementById('setPasswordBtn');
+
+      if (!pw || pw.length < 6) {
+        error.textContent = 'Password must be at least 6 characters.';
+        error.classList.add('visible');
+        return;
+      }
+
+      if (pw !== confirm) {
+        error.textContent = 'Passwords do not match.';
+        error.classList.add('visible');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const { error: updateError } = await supabaseClient.auth.updateUser({ password: pw });
+
+      if (updateError) {
+        error.textContent = updateError.message || 'Failed to set password.';
+        error.classList.add('visible');
+      } else {
+        error.classList.remove('visible');
+        document.getElementById('setPasswordOverlay').classList.add('hidden');
+        document.getElementById('setPasswordInput').value = '';
+        document.getElementById('confirmPasswordInput').value = '';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Set Password';
+    }
+
+    document.getElementById('setPasswordInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('confirmPasswordInput').focus();
+    });
+    document.getElementById('confirmPasswordInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitSetPassword();
     });
 
     async function signOut() {
