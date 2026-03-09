@@ -325,9 +325,33 @@
     .footer-note {
       margin-top: 44px; padding: 18px 22px;
       background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.15);
-      border-radius: 14px; display: flex; align-items: center; gap: 12px;
+      border-radius: 14px; display: flex; align-items: flex-start; gap: 12px;
     }
-    .footer-note span:last-child { font-size: 14px; color: #B8A8D8; line-height: 1.55; }
+    .footer-note-content { font-size: 14px; color: #B8A8D8; line-height: 1.55; flex: 1; min-width: 0; }
+    .footer-note-content ul {
+      margin: 8px 0 0 0; padding-left: 20px; list-style: disc;
+    }
+    .footer-note-content li { margin-bottom: 4px; }
+    .footer-note-content[contenteditable="true"] {
+      outline: none;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: rgba(139, 92, 246, 0.06);
+      cursor: text;
+    }
+    .footer-note-content[contenteditable="true"]:focus {
+      border-color: rgba(139, 92, 246, 0.45);
+      background: rgba(139, 92, 246, 0.1);
+    }
+    .footer-note-hint {
+      display: none;
+      font-size: 11px;
+      color: #6B5B8D;
+      margin-top: 6px;
+      font-style: italic;
+    }
+    body.edit-mode .footer-note-hint { display: block; }
 
     /* Edit mode text */
     .item-text[contenteditable="true"] {
@@ -440,10 +464,13 @@
     <!-- Phases rendered by JS -->
     <div id="phases"></div>
 
-    <!-- Footer -->
+    <!-- Footer note -->
     <div class="footer-note">
-      <span style="font-size: 18px;">💡</span>
-      <span>This is a living document — more phases and detail will be added as the process evolves.</span>
+      <span style="font-size: 18px; flex-shrink: 0;">💡</span>
+      <div>
+        <div class="footer-note-content" id="footerNoteContent">This is a living document — more phases and detail will be added as the process evolves.</div>
+        <div class="footer-note-hint">Click to edit. Press Enter for new lines. Use "• " to start a bullet point.</div>
+      </div>
     </div>
   </div>
 
@@ -603,6 +630,10 @@
           pill.removeEventListener('click', linkPillEditHandler);
         });
 
+        // Remove footer note editable
+        const footerNote = document.getElementById('footerNoteContent');
+        if (footerNote) footerNote.removeAttribute('contenteditable');
+
         closeLinkPopover();
         saveToServer();
 
@@ -715,6 +746,10 @@
       const subtitleEl = document.getElementById('sopSubtitle');
       if (titleEl) titleEl.setAttribute('contenteditable', 'true');
       if (subtitleEl) subtitleEl.setAttribute('contenteditable', 'true');
+
+      // Make footer note editable
+      const footerNote = document.getElementById('footerNoteContent');
+      if (footerNote) footerNote.setAttribute('contenteditable', 'true');
     }
 
     // =============================================
@@ -727,6 +762,10 @@
       const subtitleEl = document.getElementById('sopSubtitle');
       if (titleEl) sopData.title = titleEl.textContent.trim();
       if (subtitleEl) sopData.subtitle = subtitleEl.textContent.trim();
+
+      // Save footer note (as HTML to preserve bullet points)
+      const footerNote = document.getElementById('footerNoteContent');
+      if (footerNote) sopData.footer_note = footerNote.innerHTML;
 
       document.querySelectorAll('.phase').forEach(phaseEl => {
         const phaseIdx = parseInt(phaseEl.dataset.phaseIdx);
@@ -757,7 +796,7 @@
           title: sopData.title,
           subtitle: sopData.subtitle,
           section_id: sopData.section_id,
-          data: { phases: sopData.phases },
+          data: { phases: sopData.phases, footer_note: sopData.footer_note || '' },
         }).eq('id', SOP_ID);
       } catch (err) {
         console.error('Failed to save:', err);
@@ -1016,7 +1055,7 @@
     // =============================================
     let saveTimeout;
     document.addEventListener('input', (e) => {
-      if ((e.target.classList.contains('item-text') || e.target.classList.contains('phase-title') || e.target.classList.contains('phase-days') || e.target.id === 'sopTitle' || e.target.id === 'sopSubtitle') && isEditMode) {
+      if ((e.target.classList.contains('item-text') || e.target.classList.contains('phase-title') || e.target.classList.contains('phase-days') || e.target.id === 'sopTitle' || e.target.id === 'sopSubtitle' || e.target.id === 'footerNoteContent') && isEditMode) {
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => saveToServer(), 800);
       }
@@ -1047,6 +1086,7 @@
             subtitle: data.subtitle || '',
             phases: (data.data && data.data.phases) ? data.data.phases : [],
             section_id: data.section_id || null,
+            footer_note: (data.data && data.data.footer_note) ? data.data.footer_note : '',
           };
         }
       } catch (err) {
@@ -1055,13 +1095,19 @@
 
       // New empty SOP
       if (!sopData) {
-        sopData = { title: 'New SOP', subtitle: '', phases: [], section_id: null };
+        sopData = { title: 'New SOP', subtitle: '', phases: [], section_id: null, footer_note: '' };
       }
 
       // Populate header
       document.title = sopData.title + ' \u2014 Teams Squared';
       document.getElementById('sopTitle').textContent = sopData.title;
       document.getElementById('sopSubtitle').textContent = sopData.subtitle;
+
+      // Restore footer note
+      const footerEl = document.getElementById('footerNoteContent');
+      if (footerEl && sopData.footer_note) {
+        footerEl.innerHTML = sopData.footer_note;
+      }
 
       await loadSections();
       initEmojiPicker();
