@@ -1183,11 +1183,14 @@
 
       // Listen for auth changes
       supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          // Check if this is an invite acceptance or password recovery
+        if (event === 'PASSWORD_RECOVERY' && session) {
+          // Password reset link clicked — show set password modal
+          await onLoggedIn();
+          showSetPasswordModal();
+        } else if (event === 'SIGNED_IN' && session) {
+          // Check if this is an invite acceptance (URL hash may contain type=invite)
           const hash = window.location.hash;
-          if (hash.includes('type=invite') || hash.includes('type=recovery')) {
-            // Clear the hash so it doesn't retrigger
+          if (hash.includes('type=invite')) {
             history.replaceState(null, '', window.location.pathname);
             await onLoggedIn();
             showSetPasswordModal();
